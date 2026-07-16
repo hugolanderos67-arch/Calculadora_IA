@@ -178,6 +178,102 @@
       line-height: 1.5;
     }
 
+    .summary-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px;
+      margin-top: 22px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+
+    .summary-card h4 {
+      margin: 0 0 18px;
+      color: var(--navy);
+      font-size: 1rem;
+    }
+
+    .summary-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .summary-item {
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--blue-soft);
+      border: 1px solid #d8e8ff;
+    }
+
+    .summary-item span {
+      display: block;
+    }
+
+    .summary-item .label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .summary-item .value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .chart-card {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #f7fbff;
+      border: 1px solid #d8e8ff;
+    }
+
+    .chart-row {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .chart-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.94rem;
+      color: var(--navy-2);
+      margin-bottom: 6px;
+    }
+
+    .chart-bar {
+      height: 18px;
+      border-radius: 999px;
+      background: rgba(47, 109, 179, 0.16);
+      overflow: hidden;
+    }
+
+    .chart-bar-inner {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    .chart-bar-inner.depreciacion {
+      background: linear-gradient(90deg, #356cb3, #6a9fe8);
+    }
+
+    .chart-bar-inner.valor-neto {
+      background: linear-gradient(90deg, #2f7e5f, #7ac29e);
+    }
+
+    .chart-note {
+      font-size: 0.84rem;
+      color: var(--muted);
+      line-height: 1.4;
+      margin-top: 8px;
+    }
+
     .error {
       display: none;
       margin-top: 14px;
@@ -280,6 +376,58 @@
           </div>
           <p class="helper">Los factores se muestran con 4 decimales y los montos con formato monetario internacional en pesos.</p>
         </div>
+
+        <div class="summary-card" id="summary-card" aria-live="polite">
+          <h4>Resumen de valores</h4>
+          <div class="summary-list">
+            <div class="summary-item">
+              <span class="label">VRN</span>
+              <span id="summary-vrn" class="value">—</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Edad (años)</span>
+              <span id="summary-edad" class="value">—</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Vida útil</span>
+              <span id="summary-vida" class="value">—</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Estado</span>
+              <span id="summary-estado" class="value">—</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Factor Ross</span>
+              <span id="summary-ross" class="value">—</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Factor Total</span>
+              <span id="summary-total" class="value">—</span>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-row">
+              <div class="chart-label">
+                <span>Depreciación</span>
+                <span id="chart-value-depreciacion">—</span>
+              </div>
+              <div class="chart-bar">
+                <div id="chart-bar-depreciacion" class="chart-bar-inner depreciacion" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="chart-row">
+              <div class="chart-label">
+                <span>Valor neto</span>
+                <span id="chart-value-valor-neto">—</span>
+              </div>
+              <div class="chart-bar">
+                <div id="chart-bar-valor-neto" class="chart-bar-inner valor-neto" style="width: 0%"></div>
+              </div>
+            </div>
+            <p class="chart-note">El gráfico compara la depreciación acumulada con el valor neto actual sobre el mismo VRN.</p>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -359,9 +507,30 @@
       depreciacionEl.textContent = formatCurrency(depreciacion);
       valorNetoEl.textContent = formatCurrency(valorNeto);
 
+      populateSummary(vrn, edad, vida, estado, R, F_total, depreciacion, valorNeto);
+
       successMsg.textContent = 'Cálculo realizado correctamente. El resultado se ha actualizado en tiempo real.';
       successMsg.style.display = 'block';
     });
+
+    function populateSummary(vrn, edad, vida, estado, R, F_total, depreciacion, valorNeto) {
+      document.getElementById('summary-vrn').textContent = formatCurrency(vrn);
+      document.getElementById('summary-edad').textContent = edad.toFixed(0);
+      document.getElementById('summary-vida').textContent = vida.toFixed(0);
+      document.getElementById('summary-estado').textContent = formatDecimal(estado);
+      document.getElementById('summary-ross').textContent = formatDecimal(R);
+      document.getElementById('summary-total').textContent = formatDecimal(F_total);
+
+      document.getElementById('chart-value-depreciacion').textContent = formatCurrency(depreciacion);
+      document.getElementById('chart-value-valor-neto').textContent = formatCurrency(valorNeto);
+
+      const maxValue = Math.max(depreciacion, valorNeto, vrn);
+      const depreciationPercent = maxValue > 0 ? (depreciacion / maxValue) * 100 : 0;
+      const valorNetoPercent = maxValue > 0 ? (valorNeto / maxValue) * 100 : 0;
+
+      document.getElementById('chart-bar-depreciacion').style.width = depreciationPercent + '%';
+      document.getElementById('chart-bar-valor-neto').style.width = valorNetoPercent + '%';
+    }
   </script>
 </body>
 </html>
